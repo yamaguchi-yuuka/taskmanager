@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>タスク管理</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --surface2: #f0efe9;
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.14);
+  --text: #1a1917;
+  --text2: #6b6a66;
+  --text3: #a09f9b;
+  --accent: #3d3bcc;
+  --accent-bg: #eeedf9;
+  --accent-text: #2b29a0;
+  --green: #1a7a55;
+  --green-bg: #e4f4ed;
+  --amber: #8a5c0a;
+  --amber-bg: #fdf0d8;
+  --red: #9c2828;
+  --red-bg: #fdeaea;
+  --today-border: #3d3bcc;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #171614;
+    --surface: #1f1e1c;
+    --surface2: #272623;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0efe9;
+    --text2: #9e9d99;
+    --text3: #5e5d5a;
+    --accent: #7b79e8;
+    --accent-bg: #2a2960;
+    --accent-text: #b0aff4;
+    --green: #4db88a;
+    --green-bg: #0f3326;
+    --amber: #d4a04a;
+    --amber-bg: #3a2a0a;
+    --red: #e07070;
+    --red-bg: #3a1212;
+    --today-border: #7b79e8;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.6;
+}
+/* Layout */
+.app { max-width: 680px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 2rem;
+}
+.logo {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.today-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--text3);
+  letter-spacing: 0.02em;
+}
+/* Add form */
+.add-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.add-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.add-form input[type=text] {
+  flex: 1;
+  min-width: 160px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: border-color .15s;
+}
+.add-form input[type=text]:focus { border-color: var(--accent); }
+.add-form input[type=text]::placeholder { color: var(--text3); }
+.add-form input[type=date] {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  transition: border-color .15s;
+  width: 148px;
+}
+.add-form input[type=date]:focus { border-color: var(--accent); }
+.add-form select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+  transition: border-color .15s;
+}
+.add-form select:focus { border-color: var(--accent); }
+.btn-add {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity .15s, transform .1s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-add:hover { opacity: .88; }
+.btn-add:active { transform: scale(.97); }
+/* Sections */
+.sections { display: flex; flex-direction: column; gap: 10px; }
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: border-color .2s;
+}
+.section.today-section { border-color: var(--today-border); border-width: 1.5px; }
+.sec-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: .75rem 1rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background .15s;
+}
+.sec-header:hover { background: var(--surface2); }
+.sec-icon {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.icon-today { background: var(--accent-bg); color: var(--accent); }
+.icon-daily { background: var(--surface2); color: var(--text2); }
+.icon-upcoming { background: var(--green-bg); color: var(--green); }
+.icon-someday { background: var(--amber-bg); color: var(--amber); }
+.sec-title { font-size: 13px; font-weight: 500; flex: 1; }
+.sec-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--surface2);
+  color: var(--text3);
+  border: 1px solid var(--border);
+}
+.sec-badge.today-badge { background: var(--accent-bg); color: var(--accent-text); border-color: transparent; }
+.chevron { font-size: 13px; color: var(--text3); transition: transform .2s; }
+.chevron.open { transform: rotate(180deg); }
+/* Task list */
+.task-list { padding: 0 1rem .5rem; }
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: .5rem 0;
+  border-bottom: 1px solid var(--border);
+  transition: opacity .2s;
+}
+.task-item:last-child { border-bottom: none; }
+.task-item.done-item { opacity: .5; }
+.cb-wrap {
+  flex-shrink: 0;
+  margin-top: 3px;
+  position: relative;
+  width: 16px; height: 16px;
+}
+.cb-wrap input[type=checkbox] { opacity: 0; position: absolute; inset: 0; cursor: pointer; margin: 0; width: 100%; height: 100%; }
+.cb-box {
+  width: 16px; height: 16px;
+  border: 1.5px solid var(--border2);
+  border-radius: 5px;
+  background: var(--surface2);
+  pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, border-color .15s;
+}
+.cb-wrap input:checked ~ .cb-box { background: var(--accent); border-color: var(--accent); }
+.cb-check { display: none; color: #fff; font-size: 10px; }
+.cb-wrap input:checked ~ .cb-box .cb-check { display: block; }
+.dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 7px;
+}
+.dot-today, .dot-daily { background: var(--accent); }
+.dot-upcoming { background: var(--green); }
+.dot-someday { background: var(--amber); }
+.task-text {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  min-width: 0;
+  word-break: break-word;
+  line-height: 1.5;
+  border-radius: 4px;
+  padding: 0 2px;
+  transition: background .1s;
+}
+.task-text:focus { background: var(--surface2); }
+.task-text.done { text-decoration: line-through; color: var(--text3); }
+.task-tags { display: flex; gap: 4px; flex-shrink: 0; margin-top: 3px; flex-wrap: wrap; justify-content: flex-end; }
+.tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--text3);
+  background: var(--surface2);
+  white-space: nowrap;
+}
+.tag.overdue { background: var(--red-bg); color: var(--red); border-color: transparent; }
+.tag.due-today { background: var(--accent-bg); color: var(--accent-text); border-color: transparent; }
+.tag.due-soon { background: var(--amber-bg); color: var(--amber); border-color: transparent; }
+.tag.cat-tag { background: var(--surface2); }
+.del-btn {
+  background: none; border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity .15s;
+  margin-top: 2px;
+  line-height: 1;
+}
+.task-item:hover .del-btn { opacity: 1; }
+.empty-msg {
+  padding: .6rem 0;
+  font-size: 13px;
+  color: var(--text3);
+}
+.sub-label {
+  font-size: 11px;
+  color: var(--text3);
+  padding: .4rem 0 .2rem;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: .02em;
+}
+.divider { height: 1px; background: var(--border); margin: .25rem 0; }
+/* Toast */
+#toast {
+  position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--text); color: var(--bg);
+  font-size: 13px; padding: 8px 16px;
+  border-radius: 20px;
+  opacity: 0; transition: opacity .3s, transform .3s;
+  pointer-events: none; white-space: nowrap;
+  z-index: 100;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* SVG icons inline */
+.ic { display: inline-block; width: 14px; height: 14px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">タスク管理</div>
+    <div class="today-label" id="date-label"></div>
+  </header>
+
+  <div class="add-form">
+    <div class="add-row">
+      <input type="text" id="new-task" placeholder="タスクを追加…" autocomplete="off" />
+    </div>
+    <div class="add-row">
+      <select id="new-cat">
+        <option value="today">今日やる</option>
+        <option value="daily">定常</option>
+        <option value="upcoming">近日中</option>
+        <option value="someday">いつか</option>
+      </select>
+      <input type="date" id="new-due" />
+      <button class="btn-add" id="add-btn">
+        <svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
+        追加
+      </button>
+    </div>
+  </div>
+
+  <div class="sections" id="sections"></div>
+</div>
+<div id="toast"></div>
+
+<script>
+const STORE_KEY = 'tasks_main';
+const OLD_KEYS = ['tasks_v2', 'tasks_v1'];
+const todayStr = new Date().toISOString().split('T')[0];
+
+const CATS = [
+  { id: 'today',    label: '今日やること', iconCls: 'icon-today',    dot: 'dot-today',    icon: '☀' },
+  { id: 'daily',    label: '定常タスク',   iconCls: 'icon-daily',    dot: 'dot-daily',    icon: '↻' },
+  { id: 'upcoming', label: '近日中・週末', iconCls: 'icon-upcoming', dot: 'dot-upcoming', icon: '◷' },
+  { id: 'someday',  label: 'いつかやる',   iconCls: 'icon-someday',  dot: 'dot-someday',  icon: '…' },
+];
+
+let tasks = [];
+let collapsed = { today: false, daily: false, upcoming: false, someday: false };
+
+// Date label
+const d = new Date();
+document.getElementById('date-label').textContent =
+  `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${['日','月','火','水','木','金','土'][d.getDay()]}`;
+
+function fmtDate(s) {
+  if (!s) return '';
+  const [, m, d] = s.split('-');
+  return `${+m}/${+d}`;
+}
+function dueCls(s) {
+  if (!s) return '';
+  if (s < todayStr) return 'overdue';
+  if (s === todayStr) return 'due-today';
+  if ((new Date(s) - new Date(todayStr)) / 864e5 <= 3) return 'due-soon';
+  return '';
+}
+function dueLabel(s) {
+  const c = dueCls(s);
+  if (c === 'overdue') return fmtDate(s) + ' 超過';
+  if (c === 'due-today') return '今日';
+  return fmtDate(s);
+}
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function load() {
+  // Try main key
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) { tasks = JSON.parse(raw); render(); return; }
+  } catch(e) {}
+  // Migrate from old keys
+  for (const k of OLD_KEYS) {
+    try {
+      const raw = localStorage.getItem(k);
+      if (raw) {
+        tasks = JSON.parse(raw);
+        save();
+        toast(`以前のタスク ${tasks.length}件を引き継ぎました`);
+        render(); return;
+      }
+    } catch(e) {}
+  }
+  render();
+}
+
+function save() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(tasks));
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function buildToday() {
+  return {
+    explicit: tasks.filter(t => t.cat === 'today'),
+    fromOthers: tasks.filter(t => t.cat !== 'today' && t.due === todayStr)
+  };
+}
+
+function itemHtml(t, dotCls, showCatTag = false) {
+  const dc = dueCls(t.due);
+  const catLabel = CATS.find(c => c.id === t.cat)?.label || '';
+  return `<div class="task-item${t.done ? ' done-item' : ''}" data-id="${t.id}">
+    <label class="cb-wrap">
+      <input type="checkbox" data-id="${t.id}" ${t.done ? 'checked' : ''}>
+      <div class="cb-box"><span class="cb-check">✓</span></div>
+    </label>
+    <span class="dot ${dotCls}"></span>
+    <span class="task-text${t.done ? ' done' : ''}" contenteditable="true" spellcheck="false" data-id="${t.id}">${esc(t.text)}</span>
+    <div class="task-tags">
+      ${showCatTag ? `<span class="tag cat-tag">${catLabel}</span>` : ''}
+      ${t.due ? `<span class="tag ${dc}">${dueLabel(t.due)}</span>` : ''}
+    </div>
+    <button class="del-btn" data-id="${t.id}" title="削除">✕</button>
+  </div>`;
+}
+
+function render() {
+  const sec = document.getElementById('sections');
+  sec.innerHTML = '';
+  const { explicit, fromOthers } = buildToday();
+  const todayPending = [...explicit, ...fromOthers].filter(t => !t.done).length;
+
+  CATS.forEach(cat => {
+    const open = !collapsed[cat.id];
+    const div = document.createElement('div');
+    div.className = 'section' + (cat.id === 'today' ? ' today-section' : '');
+
+    let bodyHtml = '';
+    let badgeHtml = '';
+
+    if (cat.id === 'today') {
+      badgeHtml = `<span class="sec-badge today-badge">${todayPending}件残り</span>`;
+      if (open) {
+        const explicitHtml = explicit.length
+          ? explicit.map(t => itemHtml(t, 'dot-today')).join('')
+          : '<p class="empty-msg">タスクなし</p>';
+        const othersHtml = fromOthers.length
+          ? `<div class="divider"></div>
+             <p class="sub-label">他カテゴリから（今日期限）</p>
+             ${fromOthers.map(t => itemHtml(t, 'dot-upcoming', true)).join('')}`
+          : '';
+        bodyHtml = `<div class="task-list">${explicitHtml}${othersHtml}</div>`;
+      }
+    } else {
+      const items = tasks.filter(t => t.cat === cat.id);
+      const pending = items.filter(t => !t.done).length;
+      badgeHtml = `<span class="sec-badge">${pending}件</span>`;
+      if (open) {
+        bodyHtml = `<div class="task-list">${
+          items.length ? items.map(t => itemHtml(t, cat.dot)).join('') : '<p class="empty-msg">タスクなし</p>'
+        }</div>`;
+      }
+    }
+
+    div.innerHTML = `
+      <div class="sec-header" data-cat="${cat.id}">
+        <div class="sec-icon ${cat.iconCls}">${cat.icon}</div>
+        <span class="sec-title">${cat.label}</span>
+        ${badgeHtml}
+        <span class="chevron ${open ? 'open' : ''}">▾</span>
+      </div>
+      ${bodyHtml}`;
+    sec.appendChild(div);
+  });
+
+  // Events
+  sec.querySelectorAll('.sec-header').forEach(h => {
+    h.addEventListener('click', () => {
+      collapsed[h.dataset.cat] = !collapsed[h.dataset.cat];
+      render();
+    });
+  });
+  sec.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', e => {
+      e.stopPropagation();
+      const t = tasks.find(t => t.id === +e.target.dataset.id);
+      if (t) { t.done = e.target.checked; save(); render(); }
+    });
+  });
+  sec.querySelectorAll('.del-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = +e.currentTarget.dataset.id;
+      tasks = tasks.filter(t => t.id !== id);
+      save(); render();
+      toast('削除しました');
+    });
+  });
+  sec.querySelectorAll('.task-text[contenteditable]').forEach(el => {
+    el.addEventListener('blur', () => {
+      const t = tasks.find(t => t.id === +el.dataset.id);
+      if (t) { t.text = el.innerText.trim() || t.text; save(); }
+    });
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+    });
+    // prevent header collapse when clicking text
+    el.addEventListener('click', e => e.stopPropagation());
+  });
+}
+
+// Add task
+document.getElementById('add-btn').addEventListener('click', addTask);
+document.getElementById('new-task').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
+document.getElementById('new-cat').addEventListener('change', function() {
+  if (this.value === 'today') document.getElementById('new-due').value = todayStr;
+});
+
+function addTask() {
+  const inp = document.getElementById('new-task');
+  const cat = document.getElementById('new-cat').value;
+  const due = document.getElementById('new-due').value || '';
+  const text = inp.value.trim();
+  if (!text) { inp.focus(); return; }
+  tasks.push({ id: Date.now(), cat, text, due, done: false });
+  inp.value = '';
+  collapsed[cat] = false;
+  save(); render();
+  inp.focus();
+}
+
+load();
+</script>
+</body>
+</html>
